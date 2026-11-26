@@ -1,0 +1,34 @@
+name: pipeline
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: 部品のインストール
+        run: pip install -r requirements.txt
+      - name: RSS取得
+        run: python rss_to_db.py
+      - name: 日本語要約
+        if: ${{ !cancelled() }}
+        run: python summarize.py
+      - name: 重要情報の抽出
+        if: ${{ !cancelled() }}
+        run: python ai_extract.py
