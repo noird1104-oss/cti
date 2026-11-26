@@ -16,14 +16,16 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: requirements-ci.txt
       - name: 部品のインストール
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-ci.txt
       - name: RSS取得
         run: python rss_to_db.py
       - name: 日本語要約
@@ -32,3 +34,6 @@ jobs:
       - name: 重要情報の抽出
         if: ${{ !cancelled() }}
         run: python ai_extract.py
+      - name: Slack通知
+        if: ${{ !cancelled() }}
+        run: python notify_slack.py
